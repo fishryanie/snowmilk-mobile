@@ -1,21 +1,24 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "expo-router";
-import { Receipt, ChevronRight } from "lucide-react-native";
-import { Pressable } from "react-native";
+import { Coins, Plus, Search, Wallet } from "lucide-react-native";
+import { FlatList, Pressable } from "react-native";
 import { useData } from "api/hooks";
 import { ThemedText, ThemedView } from "components/base";
 import {
-  Card,
-  DetailRow,
-  AddRecordButton,
   MonthPicker,
+  SectionTitle,
   Segments,
-  Stat,
 } from "components/molecules/common";
 import { Field } from "components/molecules/form-field";
+import {
+  CountBadge,
+  PageHeading,
+  SummaryPill,
+} from "components/molecules/page-heading";
 import { ListScreen } from "components/organisms/screen";
-import { StatusChip } from "components/ui/status-chip";
-import { FontFamily, Palette } from "themes";
+import { AppButton } from "components/ui/button";
+import { PageActionBar } from "components/ui/page-action-bar";
+import { FontFamily, NumericFontVariant, PageLayout, Palette } from "themes";
 import type { Expense } from "types/domain";
 import {
   dateLabel,
@@ -24,13 +27,19 @@ import {
   idOf,
   matches,
   money,
+  number,
 } from "utils/format";
+
 export default function ExpensesScreen() {
   const router = useRouter();
+  const listRef = useRef<FlatList<Expense>>(null);
   const query = useData<Expense[]>("/api/expenses?limit=500");
   const [search, setSearch] = useState("");
   const [period, setPeriod] = useState(() => dayKey().slice(0, 7));
   const [status, setStatus] = useState("all");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const filtered = Boolean(search.trim()) || status !== "all";
+  const pending = query.data === undefined;
   const items = (query.data ?? [])
     .filter(
       (item) =>
@@ -45,8 +54,10 @@ export default function ExpensesScreen() {
   const unpaid = items
     .filter((item) => item.paymentStatus === "unpaid")
     .reduce((sum, item) => sum + item.amount, 0);
+
   return (
     <ListScreen
+      listRef={listRef}
       items={items}
       keyOf={idOf}
       loading={query.isLoading}
@@ -55,41 +66,117 @@ export default function ExpensesScreen() {
       refresh={() => {
         void query.refetch();
       }}
+      actions={
+        <PageActionBar
+          actions={[
+            {
+              label: "Tìm và lọc chi phí",
+              Icon: Search,
+              active: filtersOpen || filtered,
+              expanded: filtersOpen,
+              indicator: filtered,
+              onPress: () => {
+                setFiltersOpen((open) => !open);
+                listRef.current?.scrollToOffset({ offset: 0, animated: true });
+              },
+            },
+            {
+              label: "Thêm chi phí",
+              Icon: Plus,
+              onPress: () => router.push("/editor?kind=expense"),
+            },
+          ]}
+        />
+      }
       header={
         <>
-          <ThemedView rowCenter gap={12}>
-            <ThemedView flex={1}>
-              <MonthPicker value={period} onChange={setPeriod} />
-            </ThemedView>
-            <AddRecordButton
-              onPress={() => router.push("/editor?kind=expense")}
-              label="Thêm chi phí"
-            />
+          <PageHeading title="Chi phí">
+            <CountBadge
+              icon={
+                <Wallet
+                  size={15}
+                  strokeWidth={1.5}
+                  color={Palette.textSecondary}
+                />
+              }
+            >
+              {pending ? "—" : number(items.length)} khoản
+            </CountBadge>
+          </PageHeading>
+          <MonthPicker value={period} onChange={setPeriod} />
+          <ThemedView
+            row
+            gap={10}
+            wrap
+            accessibilityLabel="Tổng chi phí trong danh sách"
+          >
+            <SummaryPill
+              icon={
+                <Coins
+                  size={16}
+                  strokeWidth={1.5}
+                  color={Palette.textSecondary}
+                />
+              }
+            >
+              <ThemedText
+                selectable
+                fontSize={13}
+                fontFamily={FontFamily.medium}
+                fontVariant={NumericFontVariant}
+              >
+                Đã trả {pending ? "—" : money(paid)}
+              </ThemedText>
+            </SummaryPill>
+            <SummaryPill
+              icon={
+                <Wallet size={16} strokeWidth={1.5} color={Palette.cashOut} />
+              }
+            >
+              <ThemedText
+                selectable
+                fontSize={12}
+                color={Palette.cashOut}
+                fontVariant={NumericFontVariant}
+              >
+                Chưa trả {pending ? "—" : money(unpaid)}
+              </ThemedText>
+            </SummaryPill>
           </ThemedView>
-          <Card>
-            <ThemedView row gap={16}>
-              <Stat
-                label="Đã trả trong danh sách"
-                value={money(paid)}
-                color={Palette.accent}
+          <SectionTitle>Khoản chi đã ghi</SectionTitle>
+          {filtersOpen ? (
+            <ThemedView
+              gap={12}
+              padding={16}
+              radius={22}
+              backgroundColor={Palette.surfaceMuted}
+            >
+              <Field
+                label="Tìm nội dung, nhóm chi phí"
+                value={search}
+                onChange={setSearch}
               />
-              <Stat label="Chưa trả" value={money(unpaid)} color="#B54708" />
+              <Segments
+                value={status}
+                onChange={setStatus}
+                options={[
+                  { value: "all", label: "Tất cả" },
+                  { value: "paid", label: "Đã trả" },
+                  { value: "unpaid", label: "Chưa trả" },
+                ]}
+              />
             </ThemedView>
-          </Card>
-          <Field
-            label="Tìm nội dung, nhóm chi phí"
-            value={search}
-            onChange={setSearch}
-          />
-          <Segments
-            value={status}
-            onChange={setStatus}
-            options={[
-              { value: "all", label: "Tất cả" },
-              { value: "paid", label: "Đã trả" },
-              { value: "unpaid", label: "Chưa trả" },
-            ]}
-          />
+          ) : null}
+          {filtered ? (
+            <AppButton
+              label="Xóa bộ lọc"
+              variant="ghost"
+              onPress={() => {
+                setSearch("");
+                setStatus("all");
+              }}
+            />
+          ) : null}
           {query.data?.length === 500 ? (
             <ThemedText fontSize={11} color={Palette.textSecondary}>
               Danh sách giới hạn 500 khoản chi theo API Snowmilk.
@@ -108,51 +195,75 @@ export default function ExpensesScreen() {
               params: { kind: "expense", id: idOf(item) },
             })
           }
+          style={({ pressed }) => ({ opacity: pressed ? 0.55 : 1 })}
         >
-          <Card>
-            <ThemedView rowCenter gap={12}>
-              <ThemedView
-                square={42}
-                radius={14}
-                contentCenter
-                backgroundColor="#FFF3DF"
+          <ThemedView
+            padding={PageLayout.rowPadding}
+            radius={PageLayout.rowRadius}
+            borderCurve="continuous"
+            backgroundColor={Palette.surfaceMuted}
+            gap={4}
+          >
+            <ThemedView rowCenter gap={8}>
+              <ThemedText
+                flex={1}
+                minWidth={0}
+                fontSize={14}
+                lineHeight={20}
+                fontFamily={FontFamily.semibold}
               >
-                <Receipt color="#D48A40" size={21} />
-              </ThemedView>
-              <ThemedView flex={1} gap={4}>
-                <ThemedText fontSize={15} fontFamily={FontFamily.semibold}>
-                  {item.description || item.category}
-                </ThemedText>
-                <ThemedText fontSize={11} color={Palette.textTertiary}>
-                  {dateLabel(item.expenseDate)} · {item.category}
-                </ThemedText>
-              </ThemedView>
-              <ChevronRight size={18} color={Palette.textTertiary} />
+                {item.description || item.category}
+              </ThemedText>
+              <ThemedText
+                selectable
+                maxWidth="45%"
+                fontSize={13}
+                lineHeight={20}
+                textAlign="right"
+                fontFamily={FontFamily.semibold}
+                fontVariant={NumericFontVariant}
+              >
+                {money(item.amount)}
+              </ThemedText>
             </ThemedView>
-            <DetailRow
-              label={
-                item.accountingTreatment === "inventory_cost"
-                  ? "Tính vào giá vốn kho"
-                  : "Chi phí vận hành"
-              }
-              value={money(item.amount)}
-            />
-            <ThemedView row gap={6} wrap>
-              <StatusChip
-                label={item.paymentStatus === "unpaid" ? "Chưa trả" : "Đã trả"}
-                tone={item.paymentStatus === "unpaid" ? "warning" : "success"}
-              />
-              <StatusChip
-                label={
-                  item.fundingSource
-                    ? fundingLabels[item.fundingSource]
-                    : "Chưa ghi nguồn tiền"
+            <ThemedView row gap={8}>
+              <ThemedText
+                flex={1}
+                fontSize={11}
+                lineHeight={16}
+                color={Palette.textSecondary}
+              >
+                {dateLabel(item.expenseDate)} · {item.category}
+              </ThemedText>
+              <ThemedText
+                maxWidth="45%"
+                fontSize={11}
+                lineHeight={16}
+                textAlign="right"
+                color={
+                  item.paymentStatus === "unpaid"
+                    ? Palette.cashOut
+                    : Palette.textSecondary
                 }
-                tone={item.fundingSource ? "muted" : "warning"}
-              />
-              {item.isRecurring ? <StatusChip label="Định kỳ" /> : null}
+              >
+                {item.paymentStatus === "unpaid" ? "Chưa trả" : "Đã trả"}
+              </ThemedText>
             </ThemedView>
-          </Card>
+            <ThemedText
+              fontSize={11}
+              lineHeight={16}
+              color={Palette.textSecondary}
+            >
+              {item.accountingTreatment === "inventory_cost"
+                ? "Giá vốn kho"
+                : "Chi phí vận hành"}
+              {" · "}
+              {item.fundingSource
+                ? fundingLabels[item.fundingSource]
+                : "Chưa ghi nguồn tiền"}
+              {item.isRecurring ? " · Định kỳ" : ""}
+            </ThemedText>
+          </ThemedView>
         </Pressable>
       )}
     />

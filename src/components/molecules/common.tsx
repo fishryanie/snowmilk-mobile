@@ -8,7 +8,7 @@ import {
   RotateCw,
 } from "lucide-react-native";
 import { ThemedText, ThemedView } from "components/base";
-import { FontFamily, Palette } from "themes";
+import { FontFamily, PageLayout, Palette } from "themes";
 import { dayKey, monthLabel, shiftMonth } from "utils/format";
 
 export function Card({
@@ -18,10 +18,10 @@ export function Card({
   return (
     <ThemedView
       backgroundColor={tinted ? Palette.accentSoft : Palette.surfaceMuted}
-      radius={24}
+      radius={PageLayout.rowRadius}
       borderCurve="continuous"
-      padding={18}
-      gap={14}
+      padding={PageLayout.rowPadding}
+      gap={PageLayout.gap}
     >
       {children}
     </ThemedView>
@@ -33,7 +33,12 @@ export function SectionTitle({
 }: PropsWithChildren<{ right?: ReactNode }>) {
   return (
     <ThemedView rowCenter justifyContent="space-between" gap={10}>
-      <ThemedText flex={1} fontSize={16} fontFamily={FontFamily.semibold}>
+      <ThemedText
+        flex={1}
+        fontSize={12}
+        fontFamily={FontFamily.medium}
+        color={Palette.textSecondary}
+      >
         {children}
       </ThemedText>
       {right}
@@ -62,7 +67,6 @@ export function AddRecordButton({
 export function MonthPicker({
   value,
   onChange,
-  embedded = false,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -74,10 +78,8 @@ export function MonthPicker({
       rowCenter
       justifyContent="space-between"
       radius={16}
-      backgroundColor={embedded ? "transparent" : Palette.surfaceBase}
-      borderWidth={embedded ? 0 : 1}
-      borderColor={Palette.borderSubtle}
-      padding={embedded ? 0 : 4}
+      backgroundColor="transparent"
+      padding={0}
     >
       <Pressable
         accessibilityLabel="Tháng trước"
@@ -88,7 +90,7 @@ export function MonthPicker({
           <ChevronLeft size={18} color={Palette.textPrimary} />
         </ThemedView>
       </Pressable>
-      <ThemedText fontFamily={FontFamily.semibold} fontSize={14}>
+      <ThemedText fontFamily={FontFamily.semibold} fontSize={13}>
         {monthLabel(value)}
       </ThemedText>
       <Pressable

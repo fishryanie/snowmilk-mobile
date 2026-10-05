@@ -1,6 +1,7 @@
 import { Coins, Package } from "lucide-react-native";
 import { ThemedText, ThemedView } from "components/base";
-import { FontFamily, Palette } from "themes";
+import { SummaryPill } from "components/molecules/page-heading";
+import { FontFamily, NumericFontVariant, Palette } from "themes";
 import { money, number } from "utils/format";
 
 export function PurchaseSummary({
@@ -24,37 +25,29 @@ export function PurchaseSummary({
         filtered ? "Tổng nhập theo bộ lọc" : "Tổng nhập trong ngày"
       }
     >
-      <ThemedView
-        rowCenter
-        gap={7}
-        paddingHorizontal={13}
-        paddingVertical={9}
-        radius={22}
-        backgroundColor={Palette.surfaceMuted}
+      <SummaryPill
+        icon={
+          <Coins size={16} strokeWidth={1.5} color={Palette.textSecondary} />
+        }
       >
-        <Coins size={16} strokeWidth={1.5} color={Palette.textSecondary} />
         <ThemedText
           selectable
           fontSize={13}
           fontFamily={FontFamily.medium}
-          fontVariant={["tabular-nums"]}
+          fontVariant={NumericFontVariant}
         >
           {pending ? "—" : money(amount)}
         </ThemedText>
-      </ThemedView>
-      <ThemedView
-        rowCenter
-        gap={7}
-        paddingHorizontal={13}
-        paddingVertical={9}
-        radius={22}
-        backgroundColor={Palette.surfaceMuted}
+      </SummaryPill>
+      <SummaryPill
+        icon={
+          <Package size={16} strokeWidth={1.5} color={Palette.textSecondary} />
+        }
       >
-        <Package size={16} strokeWidth={1.5} color={Palette.textSecondary} />
         <ThemedText selectable fontSize={12} color={Palette.textSecondary}>
           {pending ? "—" : number(quantity)} đơn vị mua
         </ThemedText>
-      </ThemedView>
+      </SummaryPill>
     </ThemedView>
   );
 }

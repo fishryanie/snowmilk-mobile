@@ -1,25 +1,30 @@
 import { useState } from "react";
 import { useRouter } from "expo-router";
 import { Pressable } from "react-native";
-import { ChevronRight, UserRound, Plus } from "lucide-react-native";
+import { Coins, Plus, UsersRound } from "lucide-react-native";
 import { useData } from "api/hooks";
 import { ThemedText, ThemedView } from "components/base";
 import {
   Card,
   DetailRow,
   InlineError,
-  AddRecordButton,
   MonthPicker,
   SectionTitle,
   Segments,
-  Stat,
 } from "components/molecules/common";
+import {
+  CountBadge,
+  PageHeading,
+  SummaryPill,
+} from "components/molecules/page-heading";
 import { AppButton } from "components/ui/button";
+import { PageActionBar } from "components/ui/page-action-bar";
 import { StatusChip } from "components/ui/status-chip";
 import { Screen, LoadingCards } from "components/organisms/screen";
-import { FontFamily, Palette } from "themes";
+import { FontFamily, NumericFontVariant, PageLayout, Palette } from "themes";
 import type { Employee, PayrollPeriod, Withdrawal } from "types/domain";
 import { dateLabel, dayKey, idOf, money, number } from "utils/format";
+
 export default function PayrollScreen() {
   const router = useRouter();
   const [period, setPeriod] = useState(() => dayKey().slice(0, 7));
@@ -38,6 +43,10 @@ export default function PayrollScreen() {
     void withdrawals.refetch();
   };
   const paidIds = new Set(withdrawals.data?.map((item) => item.employeeId));
+  const activeShare = (employees.data ?? [])
+    .filter((item) => item.isActive)
+    .reduce((sum, item) => sum + item.sharePercent, 0);
+
   return (
     <Screen
       refresh={refresh}
@@ -45,16 +54,32 @@ export default function PayrollScreen() {
         !loading &&
         (periods.isFetching || employees.isFetching || withdrawals.isFetching)
       }
-    >
-      <ThemedView rowCenter gap={12}>
-        <ThemedView flex={1}>
-          <MonthPicker value={period} onChange={setPeriod} />
-        </ThemedView>
-        <AddRecordButton
-          onPress={() => router.push("/editor?kind=employee")}
-          label="Thêm nhân sự"
+      actions={
+        <PageActionBar
+          actions={[
+            {
+              label: "Thêm nhân sự",
+              Icon: Plus,
+              onPress: () => router.push("/editor?kind=employee"),
+            },
+          ]}
         />
-      </ThemedView>
+      }
+    >
+      <PageHeading title="Tính lương">
+        <CountBadge
+          icon={
+            <UsersRound
+              size={15}
+              strokeWidth={1.5}
+              color={Palette.textSecondary}
+            />
+          }
+        >
+          {employees.data ? number(employees.data.length) : "—"} người
+        </CountBadge>
+      </PageHeading>
+      <MonthPicker value={period} onChange={setPeriod} />
       <Segments
         value={mode}
         onChange={setMode}
@@ -75,88 +100,124 @@ export default function PayrollScreen() {
         <LoadingCards />
       ) : mode === "employees" ? (
         <>
-          <Card>
-            <Stat
-              label="Tổng tỷ lệ nhân sự đang hoạt động"
-              value={
-                number(
-                  (employees.data ?? [])
-                    .filter((item) => item.isActive)
-                    .reduce((sum, item) => sum + item.sharePercent, 0),
-                ) + "%"
-              }
-            />
-          </Card>
-          {(employees.data ?? []).map((employee) => (
-            <Pressable
-              key={idOf(employee)}
-              accessibilityRole="button"
-              accessibilityLabel={"Sửa nhân sự " + employee.name}
-              onPress={() =>
-                router.push({
-                  pathname: "/editor",
-                  params: { kind: "employee", id: idOf(employee) },
-                })
+          <ThemedView row gap={10} wrap>
+            <SummaryPill
+              icon={
+                <UsersRound
+                  size={16}
+                  strokeWidth={1.5}
+                  color={Palette.textSecondary}
+                />
               }
             >
-              <Card>
-                <ThemedView rowCenter gap={12}>
-                  <ThemedView
-                    round={42}
-                    contentCenter
-                    backgroundColor={Palette.accentSoft}
-                  >
-                    <UserRound color={Palette.accent} size={21} />
-                  </ThemedView>
-                  <ThemedView flex={1} gap={4}>
-                    <ThemedText fontSize={16} fontFamily={FontFamily.semibold}>
+              <ThemedText
+                selectable
+                fontSize={13}
+                fontFamily={FontFamily.medium}
+                fontVariant={NumericFontVariant}
+              >
+                Tỷ lệ đang hoạt động{" "}
+                {employees.data ? number(activeShare) + "%" : "—"}
+              </ThemedText>
+            </SummaryPill>
+          </ThemedView>
+          <SectionTitle>Danh sách nhân sự</SectionTitle>
+          <ThemedView gap={PageLayout.rowGap}>
+            {(employees.data ?? []).map((employee) => (
+              <Pressable
+                key={idOf(employee)}
+                accessibilityRole="button"
+                accessibilityLabel={"Sửa nhân sự " + employee.name}
+                onPress={() =>
+                  router.push({
+                    pathname: "/editor",
+                    params: { kind: "employee", id: idOf(employee) },
+                  })
+                }
+                style={({ pressed }) => ({ opacity: pressed ? 0.55 : 1 })}
+              >
+                <ThemedView
+                  padding={PageLayout.rowPadding}
+                  radius={PageLayout.rowRadius}
+                  borderCurve="continuous"
+                  backgroundColor={Palette.surfaceMuted}
+                  gap={4}
+                >
+                  <ThemedView rowCenter gap={8}>
+                    <ThemedText
+                      flex={1}
+                      fontSize={14}
+                      lineHeight={20}
+                      fontFamily={FontFamily.semibold}
+                    >
                       {employee.name}
                     </ThemedText>
-                    <ThemedText fontSize={12} color={Palette.textSecondary}>
-                      {employee.role}
+                    <ThemedText
+                      selectable
+                      fontSize={13}
+                      lineHeight={20}
+                      fontFamily={FontFamily.semibold}
+                      fontVariant={NumericFontVariant}
+                    >
+                      {number(employee.sharePercent)}%
                     </ThemedText>
                   </ThemedView>
-                  <ChevronRight color={Palette.textTertiary} size={18} />
+                  <ThemedView row gap={8}>
+                    <ThemedText
+                      flex={1}
+                      fontSize={11}
+                      lineHeight={16}
+                      color={Palette.textSecondary}
+                    >
+                      {employee.role}
+                    </ThemedText>
+                    <ThemedText
+                      fontSize={11}
+                      lineHeight={16}
+                      color={Palette.textSecondary}
+                    >
+                      {employee.isActive ? "Đang hoạt động" : "Ngừng hoạt động"}
+                    </ThemedText>
+                  </ThemedView>
                 </ThemedView>
-                <DetailRow
-                  label="Tỷ lệ phân chia"
-                  value={number(employee.sharePercent) + "%"}
-                />
-                <StatusChip
-                  label={
-                    employee.isActive ? "Đang hoạt động" : "Ngừng hoạt động"
-                  }
-                  tone={employee.isActive ? "success" : "muted"}
-                />
-              </Card>
-            </Pressable>
-          ))}
+              </Pressable>
+            ))}
+          </ThemedView>
           {employees.data?.length === 0 ? (
             <AppButton
-              icon={<Plus size={18} color="white" />}
               label="Thêm nhân sự đầu tiên"
+              variant="ghost"
               onPress={() => router.push("/editor?kind=employee")}
             />
           ) : null}
         </>
       ) : current ? (
         <>
-          <Card tinted>
-            <SectionTitle
-              right={
-                <StatusChip
-                  label={current.isClosed ? "Đã chốt" : "Tạm tính"}
-                  tone={current.isClosed ? "success" : "warning"}
+          <ThemedView row gap={10} wrap>
+            <SummaryPill
+              icon={
+                <Coins
+                  size={16}
+                  strokeWidth={1.5}
+                  color={Palette.textSecondary}
                 />
               }
             >
-              Quỹ phân chia
-            </SectionTitle>
-            <Stat
-              label="Số tiền có thể phân chia"
-              value={money(current.distributablePool)}
-              color={Palette.accent}
+              <ThemedText
+                selectable
+                fontSize={13}
+                fontFamily={FontFamily.medium}
+                fontVariant={NumericFontVariant}
+              >
+                Quỹ chia {money(current.distributablePool)}
+              </ThemedText>
+            </SummaryPill>
+            <StatusChip
+              label={current.isClosed ? "Đã chốt" : "Tạm tính"}
+              tone={current.isClosed ? "success" : "warning"}
             />
+          </ThemedView>
+          <Card>
             <DetailRow
               label="Doanh thu tháng"
               value={money(current.periodRevenue)}
@@ -174,9 +235,9 @@ export default function PayrollScreen() {
               value={money(current.allocatedTotal)}
             />
             <ThemedText
-              fontSize={12}
+              fontSize={11}
               color={Palette.textSecondary}
-              lineHeight={19}
+              lineHeight={18}
             >
               {current.isClosed
                 ? "Kỳ đã được Snowmilk chốt. Mỗi người lãnh đúng phần đã phân bổ, một phiếu trong một kỳ."
@@ -184,96 +245,129 @@ export default function PayrollScreen() {
             </ThemedText>
           </Card>
           <SectionTitle>Phần của từng người</SectionTitle>
-          {current.allocations.map((allocation) => (
-            <Card key={allocation.employeeId}>
-              <ThemedView rowCenter gap={12}>
-                <ThemedView
-                  round={40}
-                  contentCenter
-                  backgroundColor={Palette.surfaceMuted}
-                >
-                  <UserRound color={Palette.textSecondary} size={20} />
-                </ThemedView>
-                <ThemedView flex={1} gap={5}>
-                  <ThemedText fontSize={15} fontFamily={FontFamily.semibold}>
+          <ThemedView gap={PageLayout.rowGap}>
+            {current.allocations.map((allocation) => (
+              <Card key={allocation.employeeId}>
+                <ThemedView rowCenter gap={8}>
+                  <ThemedText
+                    flex={1}
+                    fontSize={14}
+                    lineHeight={20}
+                    fontFamily={FontFamily.semibold}
+                  >
                     {allocation.employeeName}
                   </ThemedText>
-                  <ThemedText fontSize={12} color={Palette.textSecondary}>
-                    {allocation.role} · {number(allocation.sharePercent)}%
+                  <ThemedText
+                    selectable
+                    maxWidth="45%"
+                    textAlign="right"
+                    fontSize={13}
+                    lineHeight={20}
+                    fontFamily={FontFamily.semibold}
+                    fontVariant={NumericFontVariant}
+                  >
+                    {money(allocation.amount)}
                   </ThemedText>
                 </ThemedView>
-                <StatusChip
-                  label={
-                    paidIds.has(allocation.employeeId)
+                <ThemedView row gap={8}>
+                  <ThemedText
+                    flex={1}
+                    fontSize={11}
+                    lineHeight={16}
+                    color={Palette.textSecondary}
+                  >
+                    {allocation.role} · {number(allocation.sharePercent)}%
+                  </ThemedText>
+                  <ThemedText
+                    fontSize={11}
+                    lineHeight={16}
+                    color={Palette.textSecondary}
+                  >
+                    {paidIds.has(allocation.employeeId)
                       ? "Đã lãnh"
                       : current.isClosed
                         ? "Chưa lãnh"
-                        : "Tạm tính"
-                  }
-                  tone={
-                    paidIds.has(allocation.employeeId) ? "success" : "muted"
-                  }
-                />
-              </ThemedView>
-              <ThemedText
-                selectable
-                fontSize={24}
-                fontFamily={FontFamily.bold}
-                color={Palette.accent}
-              >
-                {money(allocation.amount)}
-              </ThemedText>
-              {current.isClosed &&
-              allocation.amount >= 1 &&
-              !paidIds.has(allocation.employeeId) ? (
-                <AppButton
-                  label="Ghi nhận chi lương"
-                  onPress={() =>
-                    router.push({
-                      pathname: "/editor",
-                      params: {
-                        kind: "withdrawal",
-                        employeeId: allocation.employeeId,
-                        period,
-                      },
-                    })
-                  }
-                />
-              ) : null}
-            </Card>
-          ))}
+                        : "Tạm tính"}
+                  </ThemedText>
+                </ThemedView>
+                {current.isClosed &&
+                allocation.amount >= 1 &&
+                !paidIds.has(allocation.employeeId) ? (
+                  <AppButton
+                    label="Ghi nhận chi lương"
+                    variant="ghost"
+                    onPress={() =>
+                      router.push({
+                        pathname: "/editor",
+                        params: {
+                          kind: "withdrawal",
+                          employeeId: allocation.employeeId,
+                          period,
+                        },
+                      })
+                    }
+                  />
+                ) : null}
+              </Card>
+            ))}
+          </ThemedView>
           {current.allocations.length === 0 ? (
-            <ThemedText color={Palette.textSecondary} fontSize={13}>
+            <ThemedText color={Palette.textSecondary} fontSize={12}>
               Chưa có nhân sự được phân bổ trong kỳ này.
             </ThemedText>
           ) : null}
           <SectionTitle>Lịch sử đã chi</SectionTitle>
           {withdrawals.data?.length ? (
-            withdrawals.data.map((item) => (
-              <Card key={idOf(item)}>
-                <DetailRow
-                  label={item.employeeName}
-                  value={money(item.amount)}
-                />
-                <ThemedText fontSize={12} color={Palette.textSecondary}>
-                  {dateLabel(item.withdrawalDate)}
-                  {item.note ? " · " + item.note : ""}
-                </ThemedText>
-              </Card>
-            ))
+            <ThemedView gap={PageLayout.rowGap}>
+              {withdrawals.data.map((item) => (
+                <Card key={idOf(item)}>
+                  <ThemedView rowCenter gap={8}>
+                    <ThemedText
+                      flex={1}
+                      fontSize={14}
+                      fontFamily={FontFamily.semibold}
+                    >
+                      {item.employeeName}
+                    </ThemedText>
+                    <ThemedText
+                      selectable
+                      fontSize={13}
+                      fontFamily={FontFamily.semibold}
+                      fontVariant={NumericFontVariant}
+                    >
+                      {money(item.amount)}
+                    </ThemedText>
+                  </ThemedView>
+                  <ThemedText fontSize={11} color={Palette.textSecondary}>
+                    {dateLabel(item.withdrawalDate)}
+                    {item.note ? " · " + item.note : ""}
+                  </ThemedText>
+                </Card>
+              ))}
+            </ThemedView>
           ) : (
-            <ThemedText fontSize={13} color={Palette.textSecondary}>
+            <ThemedText fontSize={12} color={Palette.textSecondary}>
               Chưa có phiếu chi lương trong kỳ này.
             </ThemedText>
           )}
         </>
       ) : (
-        <Card>
-          <ThemedText color={Palette.textSecondary} fontSize={14}>
+        <ThemedView paddingVertical={30} gap={8} alignItems="center">
+          <UsersRound
+            size={27}
+            strokeWidth={1.2}
+            color={Palette.textTertiary}
+          />
+          <ThemedText
+            color={Palette.textSecondary}
+            fontSize={12}
+            lineHeight={20}
+            textAlign="center"
+          >
             Chưa có kỳ lương này trong Snowmilk. Chọn tháng đã có dữ liệu hoặc
             thêm nhân sự.
           </ThemedText>
-        </Card>
+        </ThemedView>
       )}
     </Screen>
   );

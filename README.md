@@ -47,7 +47,7 @@ Kiểm tra ngày trên bill, hàng hóa, đơn vị mua, lượng quy đổi và
 
 Server lưu toàn bộ bill qua `/api/purchases/import-receipt` trong một MongoDB transaction, dùng dấu vân tay ảnh để chống lưu trùng khi thử lại. Bản nháp được lưu riêng cho từng máy chủ bằng AsyncStorage; lỗi đọc/lưu giữ bản nháp. Ảnh nằm trong cache thiết bị; nếu hệ điều hành dọn ảnh cache, cần chọn ảnh lại. Sau khi lưu app mở đúng ngày nhập. Chi phí thuê tiệt trùng có thể bổ sung tại phiếu nhập riêng.
 
-Backend tương ứng nằm ở `/Users/mac/Documents/MyProject/snowmilk`. Cấu hình `DEEPSEEK_API_KEY` và `DEEPSEEK_RECEIPT_MODEL=deepseek-flash` ở **server**, gồm môi trường Vercel nếu app dùng API đã deploy. Không dùng biến `EXPO_PUBLIC_` cho API key. MongoDB phải hỗ trợ transaction (replica set / Atlas). API đọc bill có giới hạn 6 lần/phút và 30 lần/giờ trên máy chủ.
+Backend tương ứng nằm ở `/Users/mac/Documents/MyProject/snowmilk`. Cấu hình `DEEPSEEK_API_KEY` và `DEEPSEEK_RECEIPT_MODEL=deepseek-flash` ở **server**, gồm môi trường Vercel nếu app dùng API đã deploy. Trên Vercel, nhập đúng `deepseek-flash` không kèm dấu nháy; `DeepSeek-V4.1-Flash` là tên hiển thị, API không nhận tên này. Redeploy API sau khi sửa cấu hình. Không dùng biến `EXPO_PUBLIC_` cho API key. MongoDB phải hỗ trợ transaction (replica set / Atlas). API đọc bill có giới hạn 6 lần/phút và 30 lần/giờ trên máy chủ.
 
 Đã kiểm tra API DeepSeek thật bằng ảnh bill kiểm thử (không nhập giao dịch vào DB thật); ngày, hai mặt hàng và thành tiền đọc đúng. Kiểm thử MongoDB replica set riêng xác nhận lưu toàn bộ bill, hoàn tác và thử lại sau lỗi, chống trùng khi gửi đồng thời, hàng mới lặp lại và giới hạn đọc bill. Chưa kiểm tra camera trên iPhone/Android thật.
 

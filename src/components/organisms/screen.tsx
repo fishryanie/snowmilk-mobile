@@ -1,4 +1,4 @@
-import type { PropsWithChildren, ReactNode } from "react";
+import type { PropsWithChildren, ReactNode, Ref } from "react";
 import {
   FlatList,
   KeyboardAvoidingView,
@@ -15,50 +15,59 @@ import { ThemedText, ThemedView } from "components/base";
 import { AppButton } from "components/ui/button";
 import { EmptyState } from "components/ui/empty-state";
 import { InlineError } from "components/molecules/common";
-import { FloatingTabContentInset, FontFamily, Palette } from "themes";
+import { FontFamily, PageLayout, Palette } from "themes";
 
 const spacing = {
-  paddingHorizontal: 20,
-  paddingTop: 8,
-  paddingBottom: FloatingTabContentInset,
-  gap: 18,
+  width: "100%" as const,
+  maxWidth: PageLayout.maxWidth,
+  alignSelf: "center" as const,
+  paddingHorizontal: PageLayout.paddingHorizontal,
+  paddingTop: PageLayout.paddingTop,
+  paddingBottom: PageLayout.paddingBottom,
+  gap: PageLayout.gap,
 };
 export function Screen({
   children,
   refresh,
   refreshing = false,
-  backgroundColor,
-  contentWidth,
+  backgroundColor = Palette.surfaceBase,
+  contentWidth = PageLayout.maxWidth,
+  actions,
 }: PropsWithChildren<{
   refresh?: () => void;
   refreshing?: boolean;
   backgroundColor?: string;
   contentWidth?: number;
+  actions?: ReactNode;
 }>) {
   return (
-    <ScrollView
-      contentInsetAdjustmentBehavior="automatic"
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}
-      style={{ backgroundColor }}
-      contentContainerStyle={[
-        spacing,
-        contentWidth
-          ? { width: "100%", maxWidth: contentWidth, alignSelf: "center" }
-          : undefined,
-      ]}
-      refreshControl={
-        refresh ? (
-          <RefreshControl
-            tintColor={Palette.accent}
-            refreshing={refreshing}
-            onRefresh={refresh}
-          />
-        ) : undefined
-      }
-    >
-      {children}
-    </ScrollView>
+    <ThemedView flex={1} backgroundColor={backgroundColor}>
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        style={{ flex: 1, backgroundColor }}
+        contentContainerStyle={[
+          spacing,
+          { maxWidth: contentWidth },
+          actions
+            ? { paddingBottom: PageLayout.actionContentInset }
+            : undefined,
+        ]}
+        refreshControl={
+          refresh ? (
+            <RefreshControl
+              tintColor={Palette.accent}
+              refreshing={refreshing}
+              onRefresh={refresh}
+            />
+          ) : undefined
+        }
+      >
+        {children}
+      </ScrollView>
+      {actions}
+    </ThemedView>
   );
 }
 export function ListScreen<T>({
@@ -72,6 +81,8 @@ export function ListScreen<T>({
   refreshing,
   empty = "Chưa có dữ liệu",
   emptyMessage = "Dùng nút + để thêm mới hoặc đổi bộ lọc.",
+  actions,
+  listRef,
 }: {
   items: T[];
   keyOf: (item: T) => string;
@@ -83,50 +94,66 @@ export function ListScreen<T>({
   refreshing: boolean;
   empty?: string;
   emptyMessage?: string;
+  actions?: ReactNode;
+  listRef?: Ref<FlatList<T>>;
 }) {
   return (
-    <FlatList
-      data={loading ? [] : items}
-      keyExtractor={keyOf}
-      renderItem={({ item }) => (
-        <ThemedView marginBottom={12}>{renderItem(item)}</ThemedView>
-      )}
-      keyboardShouldPersistTaps="handled"
-      contentInsetAdjustmentBehavior="automatic"
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={{
-        paddingHorizontal: 20,
-        paddingTop: 8,
-        paddingBottom: FloatingTabContentInset,
-      }}
-      ListHeaderComponent={
-        <ThemedView gap={18} paddingBottom={18}>
-          {header}
-          <InlineError message={error} onRetry={refresh} />
-        </ThemedView>
-      }
-      ListEmptyComponent={
-        loading ? (
-          <LoadingCards />
-        ) : error && items.length === 0 ? null : (
-          <EmptyState title={empty} message={emptyMessage} />
-        )
-      }
-      refreshControl={
-        <RefreshControl
-          tintColor={Palette.accent}
-          refreshing={!loading && refreshing}
-          onRefresh={refresh}
-        />
-      }
-    />
+    <ThemedView flex={1} backgroundColor={Palette.surfaceBase}>
+      <FlatList
+        ref={listRef}
+        data={loading ? [] : items}
+        keyExtractor={keyOf}
+        renderItem={({ item }) => (
+          <ThemedView marginBottom={PageLayout.rowGap}>
+            {renderItem(item)}
+          </ThemedView>
+        )}
+        keyboardShouldPersistTaps="handled"
+        contentInsetAdjustmentBehavior="automatic"
+        showsVerticalScrollIndicator={false}
+        style={{ flex: 1, backgroundColor: Palette.surfaceBase }}
+        contentContainerStyle={{
+          ...spacing,
+          gap: 0,
+          paddingBottom: actions
+            ? PageLayout.actionContentInset
+            : PageLayout.paddingBottom,
+        }}
+        ListHeaderComponent={
+          <ThemedView gap={PageLayout.gap} paddingBottom={8}>
+            {header}
+            <InlineError message={error} onRetry={refresh} />
+          </ThemedView>
+        }
+        ListEmptyComponent={
+          loading ? (
+            <LoadingCards />
+          ) : error && items.length === 0 ? null : (
+            <EmptyState title={empty} message={emptyMessage} />
+          )
+        }
+        refreshControl={
+          <RefreshControl
+            tintColor={Palette.accent}
+            refreshing={!loading && refreshing}
+            onRefresh={refresh}
+          />
+        }
+      />
+      {actions}
+    </ThemedView>
   );
 }
 export function LoadingCards() {
   return (
-    <ThemedView gap={14}>
+    <ThemedView gap={PageLayout.rowGap}>
       {[1, 2, 3].map((key) => (
-        <ThemedView key={key} loading height={130} radius={21} />
+        <ThemedView
+          key={key}
+          loading
+          height={64}
+          radius={PageLayout.rowRadius}
+        />
       ))}
     </ThemedView>
   );
@@ -174,6 +201,9 @@ export function FormScreen({
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <ThemedView
+          width="100%"
+          maxWidth={PageLayout.maxWidth}
+          alignSelf="center"
           rowCenter
           gap={12}
           paddingHorizontal={20}
@@ -181,9 +211,10 @@ export function FormScreen({
         >
           <ThemedText
             flex={1}
-            fontSize={21}
-            lineHeight={29}
-            fontFamily={FontFamily.semibold}
+            fontSize={PageLayout.titleSize}
+            lineHeight={PageLayout.titleLineHeight}
+            letterSpacing={PageLayout.titleLetterSpacing}
+            fontFamily={FontFamily.bold}
           >
             {title}
           </ThemedText>
@@ -215,14 +246,12 @@ export function FormScreen({
           keyboardShouldPersistTaps="handled"
           contentInsetAdjustmentBehavior="automatic"
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{
-            paddingHorizontal: 20,
-            paddingTop: 8,
-            paddingBottom: 24,
-            gap: 18,
-          }}
+          contentContainerStyle={spacing}
         >
-          <ThemedView gap={18} pointerEvents={saving ? "none" : "auto"}>
+          <ThemedView
+            gap={PageLayout.gap}
+            pointerEvents={saving ? "none" : "auto"}
+          >
             {children}
           </ThemedView>
           <ThemedView pointerEvents={saving ? "none" : "auto"}>
@@ -230,6 +259,9 @@ export function FormScreen({
           </ThemedView>
         </ScrollView>
         <ThemedView
+          width="100%"
+          maxWidth={PageLayout.maxWidth}
+          alignSelf="center"
           paddingHorizontal={20}
           paddingTop={12}
           paddingBottom={Math.max(insets.bottom, 16)}
@@ -237,8 +269,13 @@ export function FormScreen({
           backgroundColor={Palette.surfaceBase}
         >
           <InlineError message={error} />
-          <AppButton label={saveLabel} loading={saving} disabled={saveDisabled}
-            loadingLabel={loadingLabel ?? "Đang lưu…"} onPress={onSave} />
+          <AppButton
+            label={saveLabel}
+            loading={saving}
+            disabled={saveDisabled}
+            loadingLabel={loadingLabel ?? "Đang lưu…"}
+            onPress={onSave}
+          />
         </ThemedView>
       </KeyboardAvoidingView>
     </BottomSheetModalProvider>

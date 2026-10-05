@@ -1,4 +1,5 @@
 import { ThemedText, ThemedView } from "components/base";
+import { Inbox } from "lucide-react-native";
 
 import { FontFamily, Palette } from "themes";
 
@@ -10,20 +11,13 @@ export function EmptyState({
   title: string;
 }) {
   return (
-    <ThemedView
-      alignItems="center"
-      backgroundColor={Palette.surfaceRaised}
-      borderColor={Palette.borderSubtle}
-      borderRadius={"large"}
-      borderWidth={1}
-      gap={"two"}
-      padding={"five"}
-    >
+    <ThemedView alignItems="center" gap={12} paddingVertical={30}>
+      <Inbox size={27} strokeWidth={1.2} color={Palette.textTertiary} />
       <ThemedText
         color={Palette.textPrimary}
-        fontFamily={FontFamily.bold}
-        fontSize={16}
-        lineHeight={22}
+        fontFamily={FontFamily.display}
+        fontSize={25}
+        textAlign="center"
       >
         {title}
       </ThemedText>
@@ -31,9 +25,10 @@ export function EmptyState({
         <ThemedText
           color={Palette.textSecondary}
           fontFamily={FontFamily.regular}
-          fontSize={14}
+          fontSize={12}
           lineHeight={20}
           textAlign="center"
+          maxWidth={270}
         >
           {message}
         </ThemedText>

@@ -34,8 +34,22 @@ export const FormControl = {
   iconSize: 18,
 } as const;
 
-// Space below scroll content for the floating navigation and the home indicator.
-export const FloatingTabContentInset = 120;
+// Shared page rhythm, taken from the Nhập hàng screen.
+export const PageLayout = {
+  maxWidth: 600,
+  paddingHorizontal: 20,
+  paddingTop: 8,
+  paddingBottom: 24,
+  gap: 10,
+  rowGap: 4,
+  rowRadius: 12,
+  rowPadding: 12,
+  titleSize: 30,
+  titleLineHeight: 39,
+  titleLetterSpacing: -1.1,
+  actionBottom: 20,
+  actionContentInset: 100,
+} as const;
 
 export const BottomTabInset = vs(
   Platform.select({ ios: 50, android: 80 }) ?? 0,

@@ -1,18 +1,19 @@
 import { useState } from "react";
 import { useRouter } from "expo-router";
 import { Pressable } from "react-native";
-import { Boxes, ChevronRight, IceCreamBowl } from "lucide-react-native";
+import { Boxes, ChevronRight, IceCreamBowl, Plus } from "lucide-react-native";
 import { useData } from "api/hooks";
 import { ThemedText, ThemedView } from "components/base";
 import {
   Card,
   DetailRow,
-  AddRecordButton,
   SectionTitle,
   Segments,
   Stat,
 } from "components/molecules/common";
 import { Field, DateField } from "components/molecules/form-field";
+import { CountBadge, PageHeading } from "components/molecules/page-heading";
+import { PageActionBar } from "components/ui/page-action-bar";
 import { ListScreen } from "components/organisms/screen";
 import { AppButton } from "components/ui/button";
 import { StatusChip } from "components/ui/status-chip";
@@ -36,34 +37,55 @@ export default function GoodsScreen() {
     "/api/inventory?date=" + date,
     mode === "inventory",
   );
+  const actions =
+    mode !== "inventory" ? (
+      <PageActionBar
+        actions={[
+          {
+            label: mode === "products" ? "Thêm sản phẩm" : "Thêm hàng hoá",
+            Icon: Plus,
+            onPress: () =>
+              router.push({
+                pathname: "/editor",
+                params: {
+                  kind: mode === "products" ? "product" : "ingredient",
+                },
+              }),
+          },
+        ]}
+      />
+    ) : undefined;
   const header = (
     <>
-      <ThemedView rowCenter gap={12}>
-        <ThemedView flex={1}>
-          <Segments
-            value={mode}
-            onChange={setMode}
-            options={[
-              { value: "ingredients", label: "Hàng hoá" },
-              { value: "products", label: "Sản phẩm bán" },
-              { value: "inventory", label: "Kiểm kho" },
-            ]}
-          />
-        </ThemedView>
-        {mode !== "inventory" ? (
-          <AddRecordButton
-            onPress={() =>
-                router.push({
-                  pathname: "/editor",
-                  params: {
-                    kind: mode === "products" ? "product" : "ingredient",
-                  },
-                })
-            }
-            label={mode === "products" ? "Thêm sản phẩm" : "Thêm hàng hoá"}
-          />
-        ) : null}
-      </ThemedView>
+      <PageHeading title="Hàng hoá">
+        <CountBadge
+          icon={
+            <Boxes size={15} strokeWidth={1.5} color={Palette.textSecondary} />
+          }
+        >
+          {mode === "products"
+            ? products.data
+              ? number(products.data.length)
+              : "—"
+            : mode === "inventory"
+              ? inventory.data
+                ? number(inventory.data.ingredientLines.length)
+                : "—"
+              : ingredients.data
+                ? number(ingredients.data.length)
+                : "—"}{" "}
+          món
+        </CountBadge>
+      </PageHeading>
+      <Segments
+        value={mode}
+        onChange={setMode}
+        options={[
+          { value: "ingredients", label: "Hàng hoá" },
+          { value: "products", label: "Sản phẩm bán" },
+          { value: "inventory", label: "Kiểm kho" },
+        ]}
+      />
       {mode === "inventory" ? (
         <>
           <DateField label="Ngày kiểm kho" value={date} onChange={setDate} />
@@ -126,6 +148,7 @@ export default function GoodsScreen() {
         items={items}
         keyOf={idOf}
         header={header}
+        actions={actions}
         loading={products.isLoading}
         error={products.error?.message}
         refresh={() => {
@@ -146,15 +169,15 @@ export default function GoodsScreen() {
             <Card>
               <ThemedView rowCenter gap={12}>
                 <ThemedView
-                  square={44}
-                  radius={14}
+                  square={32}
+                  radius={10}
                   contentCenter
                   backgroundColor={Palette.accentSoft}
                 >
                   <IceCreamBowl color={Palette.accent} size={22} />
                 </ThemedView>
                 <ThemedView flex={1} gap={4}>
-                  <ThemedText fontSize={15} fontFamily={FontFamily.semibold}>
+                  <ThemedText fontSize={14} fontFamily={FontFamily.semibold}>
                     {item.name}
                   </ThemedText>
                   <ThemedText color={Palette.textTertiary} fontSize={11}>
@@ -246,6 +269,7 @@ export default function GoodsScreen() {
         void ingredients.refetch();
       }}
       header={header}
+      actions={actions}
       empty="Không tìm thấy hàng phù hợp"
       renderItem={(item) => (
         <Pressable
@@ -261,15 +285,15 @@ export default function GoodsScreen() {
           <Card>
             <ThemedView rowCenter gap={12}>
               <ThemedView
-                square={42}
-                radius={14}
+                square={32}
+                radius={10}
                 contentCenter
                 backgroundColor={Palette.surfaceMuted}
               >
                 <Boxes color={Palette.textSecondary} size={21} />
               </ThemedView>
               <ThemedView flex={1} gap={4}>
-                <ThemedText fontSize={15} fontFamily={FontFamily.semibold}>
+                <ThemedText fontSize={14} fontFamily={FontFamily.semibold}>
                   {item.name}
                 </ThemedText>
                 <ThemedText fontSize={11} color={Palette.textTertiary}>

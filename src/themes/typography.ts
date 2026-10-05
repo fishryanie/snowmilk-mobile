@@ -1,4 +1,4 @@
-import { Platform } from "react-native";
+import { Platform, type TextStyle } from "react-native";
 import { fs } from "themes/scaling";
 
 export const FontFamily = {
@@ -10,6 +10,8 @@ export const FontFamily = {
   black: "BeVietnamPro_700Bold",
   display: "BeVietnamPro_600SemiBold",
 } as const;
+
+export const NumericFontVariant: TextStyle["fontVariant"] = ["tabular-nums"];
 
 export const Fonts = Platform.select({
   ios: {
