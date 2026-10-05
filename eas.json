@@ -1,0 +1,9 @@
+{
+  "cli": { "version": ">= 16.0.1", "appVersionSource": "local" },
+  "build": {
+    "preview": { "distribution": "internal", "android": { "buildType": "apk" } },
+    "android-apk": { "distribution": "internal", "android": { "buildType": "apk" } },
+    "android-aab": { "android": { "buildType": "app-bundle" } },
+    "production": { "autoIncrement": true }
+  }
+}
